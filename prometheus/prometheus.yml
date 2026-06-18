@@ -1,0 +1,8 @@
+global:
+  scrape_interval: 5s # 采集间隔，为了演示快一点
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: "fastapi-service"
+    static_configs:
+      - targets: ["backend:8000"]

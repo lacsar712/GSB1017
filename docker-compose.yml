@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: prometheus_db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: prometheus_db
+      TZ: Asia/Shanghai
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d prometheus_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: prometheus_backend
+    environment:
+      DATABASE_URL: postgresql://user:password@db:5432/prometheus_db
+      ENABLE_METRICS: "true"
+      TZ: Asia/Shanghai
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: always
+
+  frontend:
+    build: ./frontend
+    container_name: prometheus_frontend
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: always
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus_service
+    environment:
+      TZ: Asia/Shanghai
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    restart: always
+
+volumes:
+  postgres_data:
